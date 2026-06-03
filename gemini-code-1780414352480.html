@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Парк-Трекер PRO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;900&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Rubik', 'sans-serif'],
+                        brand: ['Montserrat', 'sans-serif'],
+                    },
+                    colors: {
+                        park: {
+                            accent: '#10b981', // Изумрудный
+                            gold: '#f59e0b',   // Золотой
+                            rose: '#f43f5e',   // Розовый
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Rubik', 'sans-serif';
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #10b981;
+            cursor: pointer;
+            border: 3px solid #ffffff;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+</head>
+<body class="bg-[#0b0f19] text-slate-100 h-screen flex flex-col justify-between max-w-md mx-auto relative overflow-hidden border-x border-slate-900 shadow-2xl">
+
+    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-park-accent text-slate-950 px-6 py-3 rounded-full shadow-xl font-bold flex items-center space-x-2 opacity-0 pointer-events-none transition-all duration-300 z-50 text-xs text-center w-[90%] justify-center">
+        <i id="toast-icon" class="fa-solid fa-circle-check"></i>
+        <span id="toast-text">Действие выполнено!</span>
+    </div>
+
+    <div id="view-auth" class="flex-grow flex flex-col justify-center px-6 py-8 space-y-8 overflow-y-auto">
+        <div class="text-center space-y-3">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-park-accent to-emerald-400 flex items-center justify-center text-white text-3xl shadow-xl mx-auto shadow-emerald-950/40">
+                <i class="fa-solid fa-ferris-wheel animate-spin" style="animation-duration: 25s;"></i>
+            </div>
+            <div>
+                <h1 class="font-brand font-black text-2xl tracking-tight text-white uppercase">Парк-Трекер <span class="text-park-accent">PRO</span></h1>
+                <p class="text-xs text-slate-400">Система учета проведенных игр</p>
+            </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 space-y-4 shadow-lg">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h2 id="auth-title" class="font-brand font-bold text-sm text-white">Вход в систему</h2>
+                <div class="flex space-x-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                    <button onclick="setAuthState('login')" id="btn-auth-login" class="text-[10px] uppercase font-bold px-2.5 py-1 rounded-md text-slate-950 bg-park-accent">Вход</button>
+                    <button onclick="setAuthState('register')" id="btn-auth-register" class="text-[10px] uppercase font-bold px-2.5 py-1 rounded-md text-slate-400">Создать</button>
+                </div>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500"><i class="fa-solid fa-user"></i></span>
+                    <input type="text" id="auth-user" placeholder="Твой логин" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-park-accent/50">
+                </div>
+                <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500"><i class="fa-solid fa-lock"></i></span>
+                    <input type="password" id="auth-pass" placeholder="Пароль" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-park-accent/50">
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button onclick="handleAuthSubmit()" class="w-full bg-gradient-to-r from-park-accent to-emerald-500 text-slate-950 font-brand font-black py-3.5 px-4 rounded-xl shadow-lg hover:from-emerald-400 transition transform active:scale-[0.98] flex items-center justify-center space-x-2 text-xs uppercase">
+                    <i class="fa-solid fa-circle-user text-base"></i>
+                    <span id="auth-btn-text">Войти в профиль</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <button onclick="bypassAuth()" class="text-xs text-slate-500 hover:text-slate-400 underline decoration-dashed">Войти без авторизации (Локальное демо)</button>
+        </div>
+    </div>
+
+    <header id="app-header" class="p-5 border-b border-slate-800/60 bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 hidden">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-park-accent to-emerald-400 flex items-center justify-center text-white text-xl shadow-lg">
+                    <i class="fa-solid fa-ferris-wheel animate-spin" style="animation-duration: 20s;"></i>
+                </div>
+                <div>
+                    <h1 class="font-brand font-bold text-sm tracking-tight">ПАРК ТРЕКЕР <span class="text-park-accent text-xs">PRO</span></h1>
+                    <span id="sync-badge" class="text-[9px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-bold uppercase cursor-pointer" onclick="forceSync()">Оффлайн-режим</span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span id="username-display" class="text-xs text-slate-400 font-bold bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700/50">Гость</span>
+                <button onclick="logOut()" class="w-8 h-8 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 flex items-center justify-center transition" title="Выйти">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main id="app-main" class="flex-grow p-4 overflow-y-auto space-y-5 hidden">
+
+        <div id="view-add" class="space-y-5">
+            
+            <div class="bg-slate-900 border border-slate-800/80 rounded-xl p-3 flex justify-between items-center shadow-md">
+                <div class="flex items-center space-x-2 text-slate-400">
+                    <i class="fa-solid fa-calendar-days text-park-accent"></i>
+                    <span class="text-[10px] font-bold uppercase tracking-wider">Просмотр периода:</span>
+                </div>
+                <input type="month" id="dashboard-month" onchange="updateDashboard()" class="bg-slate-950 border border-slate-800 rounded-lg py-1 px-2.5 text-xs font-bold text-white focus:outline-none focus:border-park-accent/50 cursor-pointer">
+            </div>
+
+            <div class="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-emerald-500 to-teal-700 text-white shadow-xl shadow-emerald-950/30">
+                <div class="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p id="earned-label" class="text-xs font-bold uppercase tracking-widest text-emerald-100">Заработано за период</p>
+                        <h2 id="total-earned" class="text-4xl font-brand font-black mt-1.5 tracking-tight">0 ₽</h2>
+                    </div>
+                    <div class="bg-white/20 px-3 py-1.5 rounded-xl backdrop-blur-md text-right">
+                        <span class="block text-[10px] text-emerald-100 uppercase font-bold">Отработано</span>
+                        <span id="total-hours" class="font-bold text-sm">0 ч</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-white/10 flex justify-between items-center text-xs text-emerald-100">
+                    <span class="flex items-center"><i class="fa-solid fa-coins mr-1.5 text-park-gold"></i>На основе прогноза ставок</span>
+                    <span id="today-stats" class="bg-emerald-600/40 px-2 py-1 rounded-md font-bold">Сегодня: 0 ₽</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800/80 space-y-4 shadow-md">
+                <div class="flex items-center space-x-2 text-park-accent">
+                    <i class="fa-solid fa-ticket-simple text-lg"></i>
+                    <h3 class="font-brand font-bold text-white uppercase tracking-wide text-xs">Записать игру</h3>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Дата проведения</label>
+                    <input type="date" id="game-date" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 focus:outline-none focus:border-park-accent/50 text-xs font-bold text-slate-200">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Какую игру провели?</label>
+                    <div id="games-grid" class="grid grid-cols-2 gap-2"></div>
+                </div>
+
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800/60">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">Сколько времени длилась?</label>
+                        <span id="hours-display" class="bg-park-accent/10 text-park-accent px-3 py-1 rounded-full font-bold text-xs">1.0 ч</span>
+                    </div>
+                    <input type="range" id="hours-slider" min="0.5" max="6" step="0.5" value="1" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-park-accent my-3" oninput="updateHoursDisplay(this.value)">
+                </div>
+
+                <button onclick="saveGameLog()" class="w-full bg-gradient-to-r from-park-accent to-emerald-500 text-slate-950 font-brand font-black py-3.5 px-4 rounded-xl shadow-lg hover:from-emerald-400 hover:to-teal-400 transition transform active:scale-[0.98] flex items-center justify-center space-x-2 text-sm uppercase">
+                    <i class="fa-solid fa-plus-circle text-lg"></i>
+                    <span>Внести в список</span>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Сегодняшние логи</h4>
+                <div id="today-logs-container" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <div id="view-history" class="space-y-5 hidden">
+            <div class="bg-gradient-to-br from-amber-500/10 to-amber-600/5 rounded-2xl p-5 border border-amber-500/20 space-y-4 shadow-md relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 opacity-10 text-6xl text-amber-500"><i class="fa-solid fa-calendar-check"></i></div>
+                <div class="flex items-center space-x-2 text-amber-500">
+                    <i class="fa-solid fa-scale-balanced text-lg"></i>
+                    <h3 class="font-brand font-bold text-white uppercase tracking-wider text-xs font-bold">Пропорциональное выравнивание ЗП</h3>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">Система распределит погрешность **строго по отработанным часам сыгранных игр**. Несыгранные игры в этом месяце затронуты не будут.</p>
+                
+                <div class="space-y-3">
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 text-amber-500">1. За какой месяц выплата?</label>
+                            <input type="month" id="adjustment-month" class="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 px-3 text-white text-sm font-bold focus:border-amber-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 text-amber-500">2. Полученная сумма на руки</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 font-bold">₽</span>
+                                <input type="number" id="real-salary-input" placeholder="Например: 45000" class="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-8 pr-3 text-white text-sm font-bold focus:border-amber-500 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="runSalaryAdjustment()" class="w-full bg-amber-500 text-slate-950 font-brand font-black py-3.5 rounded-xl hover:bg-amber-400 transition transform active:scale-[0.98] flex items-center justify-center space-x-2 text-xs uppercase">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                        <span>Рассчитать пропорции</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Все записи</h4>
+                    <button onclick="clearAllHistory()" class="text-[10px] text-rose-400 hover:text-rose-300 font-bold uppercase tracking-wider flex items-center space-x-1">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>Очистить историю</span>
+                    </button>
+                </div>
+                <div id="all-logs-container" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <div id="view-settings" class="space-y-5 hidden">
+            <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800/80 space-y-3 shadow-md">
+                <div class="flex items-center space-x-2 text-indigo-400">
+                    <i class="fa-solid fa-link text-base"></i>
+                    <h3 class="font-brand font-bold text-white uppercase tracking-wider text-xs">Шаг 1: Подключение бэкенда</h3>
+                </div>
+                <p class="text-[11px] text-slate-400 leading-relaxed">Вставь URL опубликованного Веб-приложения Google Apps Script (оканчивается на `/exec`).</p>
+                <div class="space-y-2 pt-1">
+                    <input type="text" id="sync-url-input" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-950 border border-slate-800 rounded-lg py-2.5 px-3 text-xs text-slate-300 focus:outline-none focus:border-indigo-500/50">
+                    <div class="flex space-x-2">
+                        <button onclick="saveSyncSettings()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-4 rounded-lg text-xs transition">
+                            Привязать таблицу
+                        </button>
+                        <button onclick="resetSyncSettings()" class="bg-slate-800 text-slate-400 hover:text-rose-400 px-3 py-2.5 rounded-lg text-xs transition">
+                            Отвязать
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800/80 space-y-4 shadow-md">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-2 text-blue-400">
+                        <i class="fa-solid fa-sliders text-base"></i>
+                        <h3 class="font-brand font-bold text-white uppercase tracking-wider text-xs">Мои расценки</h3>
+                    </div>
+                    <button onclick="openAddGameModal()" class="text-[10px] bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-3 py-1.5 rounded-lg border border-blue-500/20 font-bold transition">
+                        + Добавить
+                    </button>
+                </div>
+                <div id="rates-list-container" class="space-y-2"></div>
+            </div>
+        </div>
+    </main>
+
+    <nav id="app-nav" class="sticky bottom-0 left-0 right-0 border-t border-slate-800/60 bg-slate-900/90 backdrop-blur-md px-6 py-2.5 flex justify-around items-center z-40 hidden">
+        <button onclick="switchTab('tab-add')" id="btn-tab-add" class="flex flex-col items-center space-y-1 py-1 px-3 text-park-accent transition">
+            <i class="fa-solid fa-house-circle-check text-xl"></i>
+            <span class="text-[9px] font-bold uppercase tracking-wider">Учет</span>
+        </button>
+        <button onclick="switchTab('tab-history')" id="btn-tab-history" class="flex flex-col items-center space-y-1 py-1 px-3 text-slate-500 hover:text-slate-300 transition">
+            <i class="fa-solid fa-list text-xl"></i>
+            <span class="text-[9px] font-bold uppercase tracking-wider">История</span>
+        </button>
+        <button onclick="switchTab('tab-settings')" id="btn-tab-settings" class="flex flex-col items-center space-y-1 py-1 px-3 text-slate-500 hover:text-slate-300 transition">
+            <i class="fa-solid fa-gear text-xl"></i>
+            <span class="text-[9px] font-bold uppercase tracking-wider">Опции</span>
+        </button>
+    </nav>
+
+    <div id="modal-add-game" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+            <h3 class="font-brand font-bold text-white text-base flex items-center space-x-2">
+                <i class="fa-solid fa-circle-plus text-park-accent"></i>
+                <span>Новая игра</span>
+            </h3>
+            <div class="space-y-3">
+                <input type="text" id="new-game-name" placeholder="Название игры" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-white focus:outline-none focus:border-park-accent/50 text-xs">
+                <input type="number" id="new-game-rate" placeholder="Ставка в час (руб)" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-white focus:outline-none focus:border-park-accent/50 text-xs">
+                <input type="text" id="new-game-emoji" placeholder="Иконка (Эмодзи) 🎭" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-white focus:outline-none focus:border-park-accent/50 text-xs">
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeAddGameModal()" class="flex-1 bg-slate-800 text-slate-300 font-bold py-2.5 px-4 rounded-xl text-xs hover:bg-slate-700 transition">Отмена</button>
+                <button onclick="saveNewGameType()" class="flex-1 bg-park-accent text-slate-950 font-brand font-black py-2.5 px-4 rounded-xl text-xs hover:bg-emerald-400 transition">Создать</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+            <div class="flex items-center space-x-3">
+                <div id="modal-icon" class="w-10 h-10 rounded-full flex items-center justify-center text-lg"></div>
+                <div>
+                    <h3 id="modal-title" class="font-brand font-bold text-white text-sm">Внимание</h3>
+                    <p id="modal-subtitle" class="text-[10px] text-slate-500">Системное сообщение</p>
+                </div>
+            </div>
+            <p id="modal-message" class="text-xs text-slate-300 leading-relaxed pt-1">Текст...</p>
+            <div id="modal-buttons" class="flex space-x-2 pt-2"></div>
+        </div>
+    </div>
+
+    <script>
+        const DEFAULT_RATES = [
+            { name: "Мафия", rate: 500, emoji: "🕵️‍♂️" },
+            { name: "Квесты", rate: 700, emoji: "🗝️" },
+            { name: "Анимации", rate: 600, emoji: "🤡" },
+            { name: "Настольные", rate: 400, emoji: "🎲" }
+        ];
+
+        let state = {
+            currentUser: null,
+            games: [],
+            history: [],
+            selectedGame: '',
+            syncUrl: '',
+            authAction: 'login'
+        };
+
+        window.onload = function() {
+            const today = new Date();
+            document.getElementById('game-date').value = today.toISOString().split('T')[0];
+
+            // Инициализация текущего месяца для главного дашборда
+            const currentYearMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            document.getElementById('dashboard-month').value = currentYearMonth;
+
+            const prevMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            document.getElementById('adjustment-month').value = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}`;
+
+            state.syncUrl = localStorage.getItem('park_sync_url') || '';
+            document.getElementById('sync-url-input').value = state.syncUrl;
+
+            const savedUser = localStorage.getItem('park_user');
+            if (savedUser) {
+                state.currentUser = savedUser;
+                enterApplication();
+            } else {
+                document.getElementById('view-auth').classList.remove('hidden');
+            }
+        };
+
+        // Авторизация
+        function setAuthState(mode) {
+            state.authAction = mode;
+            const title = document.getElementById('auth-title');
+            const btnText = document.getElementById('auth-btn-text');
+            const btnLogin = document.getElementById('btn-auth-login');
+            const btnRegister = document.getElementById('btn-auth-register');
+
+            if (mode === 'login') {
+                title.innerText = "Вход в систему";
+                btnText.innerText = "Войти в профиль";
+                btnLogin.className = "text-[10px] uppercase font-bold px-2.5 py-1 rounded-md text-slate-950 bg-park-accent";
+                btnRegister.className = "text-[10px] uppercase font-bold px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200";
+            } else {
+                title.innerText = "Регистрация нового аккаунта";
+                btnText.innerText = "Создать аккаунт";
+                btnLogin.className = "text-[10px] uppercase font-bold px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200";
+                btnRegister.className = "text-[10px] uppercase font-bold px-2.5 py-1 rounded-md text-slate-950 bg-park-accent";
+            }
+        }
+
+        function handleAuthSubmit() { handleAuth(state.authAction); }
+
+        async function handleAuth(action) {
+            const user = document.getElementById('auth-user').value.trim();
+            const pass = document.getElementById('auth-pass').value.trim();
+
+            if (!user || !pass) return showToast("Заполни логин и пароль!", true);
+
+            if (!state.syncUrl) {
+                if (action === 'register') {
+                    localStorage.setItem('local_user_' + user, pass);
+                    showToast("Оффлайн-аккаунт зарегистрирован!");
+                    loginLocal(user);
+                } else {
+                    const savedPass = localStorage.getItem('local_user_' + user);
+                    if (savedPass && savedPass === pass) loginLocal(user);
+                    else showToast("Неверный пароль или профиль не найден", true);
+                }
+                return;
+            }
+
+            showToast("Связываемся с облаком...");
+            try {
+                const res = await fetch(`${state.syncUrl}?action=${action}&user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`, { method: 'GET', redirect: 'follow' });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    state.currentUser = user;
+                    localStorage.setItem('park_user', user);
+                    if (action === 'login' && data.rates) { state.games = data.rates; saveStateToLocalStorage(); }
+                    showToast(action === 'login' ? "С возвращением!" : "Аккаунт успешно создан!");
+                    enterApplication();
+                } else showAlert("Ошибка входа", data.message, "Доступ ограничен", "error");
+            } catch (err) {
+                showAlert("Ошибка сети", "Не удалось связаться с таблицей. Перейди в оффлайн демо-режим.", "Нет связи", "error");
+            }
+        }
+
+        function loginLocal(user) {
+            state.currentUser = user; localStorage.setItem('park_user', user);
+            const lRates = localStorage.getItem(`park_rates_${user}`); state.games = lRates ? JSON.parse(lRates) : DEFAULT_RATES;
+            const lHist = localStorage.getItem(`park_history_${user}`); state.history = lHist ? JSON.parse(lHist) : [];
+            saveStateToLocalStorage(); enterApplication();
+        }
+
+        function bypassAuth() { loginLocal("Гость"); showToast("Вход в демо-режиме осуществлен!"); }
+
+        function enterApplication() {
+            document.getElementById('view-auth').classList.add('hidden');
+            document.getElementById('app-header').classList.remove('hidden');
+            document.getElementById('app-main').classList.remove('hidden');
+            document.getElementById('app-nav').classList.remove('hidden');
+            document.getElementById('username-display').innerText = state.currentUser;
+            loadState(); renderGamesGrid(); renderRatesList(); renderLogs(); updateDashboard();
+            if (state.syncUrl && state.currentUser !== "Гость") forceSync();
+            else updateSyncBadge('offline');
+        }
+
+        function logOut() {
+            showConfirm("Выйти из аккаунта?", "Для следующего входа потребуется пароль.", function() {
+                localStorage.removeItem('park_user'); state.currentUser = null; state.history = []; state.games = [];
+                document.getElementById('app-header').classList.add('hidden'); document.getElementById('app-main').classList.add('hidden');
+                document.getElementById('app-nav').classList.add('hidden'); document.getElementById('view-auth').classList.remove('hidden');
+                document.getElementById('auth-user').value = ''; document.getElementById('auth-pass').value = '';
+            });
+        }
+
+        // Облачная синхронизация
+        async function forceSync() {
+            if (!state.syncUrl || state.currentUser === "Гость") return;
+            updateSyncBadge('syncing');
+            try {
+                const res = await fetch(`${state.syncUrl}?action=getLogs&user=${encodeURIComponent(state.currentUser)}`, { method: 'GET', redirect: 'follow' });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    state.games = data.rates && data.rates.length > 0 ? data.rates : state.games;
+                    state.history = data.logs;
+                    saveStateToLocalStorage(); renderGamesGrid(); renderRatesList(); renderLogs(); updateDashboard();
+                    updateSyncBadge('online'); showToast("Синхронизация с таблицей успешно завершена!");
+                } else updateSyncBadge('error');
+            } catch (err) { updateSyncBadge('error'); }
+        }
+
+        function updateSyncBadge(status) {
+            const badge = document.getElementById('sync-badge');
+            if (status === 'online') { badge.innerText = "Облако: В сети"; badge.className = "text-[9px] bg-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded-full font-bold uppercase cursor-pointer"; } 
+            else if (status === 'syncing') { badge.innerText = "Синхронизация..."; badge.className = "text-[9px] bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded-full font-bold uppercase animate-pulse"; } 
+            else if (status === 'error') { badge.innerText = "Сбой соединения"; badge.className = "text-[9px] bg-rose-500/20 text-rose-400 px-2.5 py-0.5 rounded-full font-bold uppercase cursor-pointer"; } 
+            else { badge.innerText = "Оффлайн-режим"; badge.className = "text-[9px] bg-slate-800 text-slate-400 px-2.5 py-0.5 rounded-full font-bold uppercase"; }
+        }
+
+        // Локальное хранилище
+        function loadState() {
+            const user = state.currentUser;
+            const savedGames = localStorage.getItem(`park_rates_${user}`), savedHistory = localStorage.getItem(`park_history_${user}`);
+            state.games = savedGames ? JSON.parse(savedGames) : DEFAULT_RATES;
+            state.history = savedHistory ? JSON.parse(savedHistory) : [];
+            if (state.games.length > 0) state.selectedGame = state.games[0].name;
+        }
+
+        function saveStateToLocalStorage() {
+            localStorage.setItem(`park_rates_${state.currentUser}`, JSON.stringify(state.games));
+            localStorage.setItem(`park_history_${state.currentUser}`, JSON.stringify(state.history));
+        }
+
+        function switchTab(tabId) {
+            document.getElementById('view-add').classList.add('hidden'); document.getElementById('view-history').classList.add('hidden'); document.getElementById('view-settings').classList.add('hidden');
+            document.getElementById('btn-tab-add').className = "flex flex-col items-center space-y-1 py-1 px-3 text-slate-500 hover:text-slate-300 transition";
+            document.getElementById('btn-tab-history').className = "flex flex-col items-center space-y-1 py-1 px-3 text-slate-500 hover:text-slate-300 transition";
+            document.getElementById('btn-tab-settings').className = "flex flex-col items-center space-y-1 py-1 px-3 text-slate-500 hover:text-slate-300 transition";
+
+            if (tabId === 'tab-add') { document.getElementById('view-add').classList.remove('hidden'); document.getElementById('btn-tab-add').className = "flex flex-col items-center space-y-1 py-1 px-3 text-park-accent transition"; } 
+            else if (tabId === 'tab-history') { document.getElementById('view-history').classList.remove('hidden'); document.getElementById('btn-tab-history').className = "flex flex-col items-center space-y-1 py-1 px-3 text-park-accent transition"; renderLogs(); } 
+            else if (tabId === 'tab-settings') { document.getElementById('view-settings').classList.remove('hidden'); document.getElementById('btn-tab-settings').className = "flex flex-col items-center space-y-1 py-1 px-3 text-park-accent transition"; renderRatesList(); }
+        }
+
+        // ДАШБОРД С УЧЕТОМ СЕЛЕКТОРА МЕСЯЦА
+        function updateDashboard() {
+            let totalEarned = 0, totalHours = 0, todayEarned = 0; 
+            const todayStr = new Date().toDateString();
+            const selectedPeriod = document.getElementById('dashboard-month').value;
+
+            state.history.forEach(log => {
+                const logDate = new Date(log.date);
+                const logPeriod = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}`;
+                
+                if (logPeriod === selectedPeriod) {
+                    totalEarned += log.earned; 
+                    totalHours += log.hours;
+                }
+                if (logDate.toDateString() === todayStr) {
+                    todayEarned += log.earned;
+                }
+            });
+
+            const monthsRu = ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"];
+            if (selectedPeriod) {
+                const [year, month] = selectedPeriod.split('-');
+                document.getElementById('earned-label').innerText = `Заработано за ${monthsRu[parseInt(month)-1]} ${year}`;
+            } else {
+                document.getElementById('earned-label').innerText = `Заработано за выбранный период`;
+            }
+
+            document.getElementById('total-earned').innerText = Math.round(totalEarned).toLocaleString('ru-RU') + " ₽";
+            document.getElementById('total-hours').innerText = totalHours.toFixed(1) + " ч";
+            document.getElementById('today-stats').innerText = "Сегодня: " + Math.round(todayEarned) + " ₽";
+        }
+
+        function renderGamesGrid() {
+            const grid = document.getElementById('games-grid'); grid.innerHTML = '';
+            state.games.forEach(g => {
+                const activeClass = (g.name === state.selectedGame) ? "border-park-accent bg-park-accent/15 text-white ring-2 ring-park-accent/20" : "border-slate-800 bg-slate-950/50 hover:bg-slate-900 text-slate-400";
+                const tile = document.createElement('div');
+                tile.className = `p-3 rounded-xl border text-center cursor-pointer transition flex flex-col items-center justify-center space-y-1 ${activeClass}`;
+                tile.onclick = () => { state.selectedGame = g.name; renderGamesGrid(); };
+                tile.innerHTML = `<span class="text-2xl">${g.emoji || '🎪'}</span><span class="font-bold text-xs block truncate w-full">${g.name}</span><span class="text-[10px] opacity-70">${g.rate} ₽/ч</span>`;
+                grid.appendChild(tile);
+            });
+        }
+
+        function updateHoursDisplay(val) { document.getElementById('hours-display').innerText = parseFloat(val).toFixed(1) + " ч"; }
+
+        async function saveGameLog() {
+            const game = state.games.find(g => g.name === state.selectedGame);
+            if (!game) return showToast("Выбери игру!", true);
+            const dateInput = document.getElementById('game-date').value;
+            const logDate = dateInput ? new Date(dateInput) : new Date();
+            
+            const newLog = { 
+                id: "local_" + Date.now().toString(), 
+                date: logDate.toISOString(), 
+                game: game.name, 
+                emoji: game.emoji || '🎪', 
+                hours: parseFloat(document.getElementById('hours-slider').value), 
+                earned: game.rate * parseFloat(document.getElementById('hours-slider').value) 
+            };
+            
+            state.history.unshift(newLog); 
+            saveStateToLocalStorage(); 
+            
+            const logPeriod = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}`;
+            document.getElementById('dashboard-month').value = logPeriod;
+
+            updateDashboard(); 
+            renderLogs();
+            document.getElementById('hours-slider').value = 1; 
+            updateHoursDisplay(1); 
+            showToast(`Записано: ${game.emoji} ${game.name}!`);
+
+            if (state.syncUrl && state.currentUser !== "Гость") {
+                updateSyncBadge('syncing');
+                try {
+                    const res = await fetch(`${state.syncUrl}?action=addLog&user=${encodeURIComponent(state.currentUser)}&date=${encodeURIComponent(newLog.date)}&game=${encodeURIComponent(newLog.game)}&hours=${newLog.hours}&earned=${newLog.earned}&emoji=${encodeURIComponent(newLog.emoji)}`, { method: 'GET', redirect: 'follow' });
+                    if ((await res.json()).status === 'success') updateSyncBadge('online'); else updateSyncBadge('error');
+                } catch (e) { updateSyncBadge('error'); }
+            }
+        }
+
+        function renderLogs() {
+            const todayContainer = document.getElementById('today-logs-container'), allContainer = document.getElementById('all-logs-container'), todayStr = new Date().toDateString();
+            const todayLogs = state.history.filter(log => new Date(log.date).toDateString() === todayStr);
+
+            todayContainer.innerHTML = todayLogs.length === 0 ? `<div class="text-center py-6 text-slate-500 text-xs bg-slate-900/30 rounded-xl border border-dashed border-slate-800"><i class="fa-solid fa-ghost text-xl mb-1 text-slate-600"></i><p>Нет записей.</p></div>` : '';
+            if (todayLogs.length > 0) todayLogs.forEach(log => todayContainer.appendChild(createLogItem(log)));
+
+            allContainer.innerHTML = state.history.length === 0 ? `<div class="text-center py-8 text-slate-500 text-xs bg-slate-900/30 rounded-xl border border-dashed border-slate-800"><i class="fa-solid fa-folder-open text-2xl mb-1 text-slate-600"></i><p>История пуста</p></div>` : '';
+            if (state.history.length > 0) state.history.forEach(log => allContainer.appendChild(createLogItem(log)));
+        }
+
+        function createLogItem(log) {
+            const d = new Date(log.date);
+            const row = document.createElement('div');
+            row.className = "bg-slate-900 border border-slate-800/60 rounded-xl p-3 flex justify-between items-center";
+            row.innerHTML = `<div class="flex items-center space-x-3"><span class="text-xl bg-slate-950 w-10 h-10 rounded-lg flex items-center justify-center">${log.emoji || '🎪'}</span><div><p class="font-bold text-xs text-white">${log.game}</p><p class="text-[10px] text-slate-500">${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' }) + " г."} в ${d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} • ${log.hours} ч</p></div></div><div class="flex items-center space-x-3"><span class="font-brand font-black text-xs text-park-accent">+${Math.round(log.earned)} ₽</span><button onclick="deleteLogEntry('${log.id}', '${log.date}')" class="text-slate-600 hover:text-rose-400 transition p-1 text-xs"><i class="fa-solid fa-trash"></i></button></div>`;
+            return row;
+        }
+
+        function deleteLogEntry(id, dateStr) {
+            showConfirm("Удалить запись?", "Она будет стерта с устройства и облака.", async function() {
+                state.history = state.history.filter(log => log.id !== id); saveStateToLocalStorage(); updateDashboard(); renderLogs(); showToast("Удалено");
+                if (state.syncUrl && state.currentUser !== "Гость") { try { await fetch(`${state.syncUrl}?action=deleteLog&user=${encodeURIComponent(state.currentUser)}&date=${encodeURIComponent(dateStr)}`); } catch(e) {} }
+            });
+        }
+
+        function clearAllHistory() {
+            showConfirm("Очистить всю историю?", "Это удалит все записи навсегда.", async function() {
+                state.history = []; saveStateToLocalStorage(); updateDashboard(); renderLogs(); showToast("История очищена!");
+                if (state.syncUrl && state.currentUser !== "Гость") { try { await fetch(`${state.syncUrl}?action=clearAll&user=${encodeURIComponent(state.currentUser)}`); } catch(e) {} }
+            });
+        }
+
+        function renderRatesList() {
+            const container = document.getElementById('rates-list-container'); container.innerHTML = '';
+            state.games.forEach(g => {
+                const item = document.createElement('div'); item.className = "bg-slate-950 border border-slate-900 rounded-xl p-3 flex justify-between items-center";
+                item.innerHTML = `<div class="flex items-center space-x-2"><span class="text-lg">${g.emoji || '🎪'}</span><span class="font-bold text-xs text-slate-200">${g.name}</span></div><div class="flex items-center space-x-2"><input type="number" value="${g.rate}" onchange="changeHourlyRate('${g.name}', this.value)" class="w-16 bg-slate-900 text-xs font-bold text-center border border-slate-800 py-1.5 rounded-lg text-park-gold focus:outline-none focus:border-park-gold/50"><span class="text-[10px] text-slate-500 font-bold">₽/ч</span><button onclick="removeGameType('${g.name}')" class="text-slate-600 hover:text-rose-400 p-1 text-xs transition"><i class="fa-solid fa-circle-minus"></i></button></div>`;
+                container.appendChild(item);
+            });
+        }
+
+        function changeHourlyRate(name, val) {
+            const game = state.games.find(g => g.name === name);
+            if (game) { game.rate = parseInt(val) || 0; saveStateToLocalStorage(); renderGamesGrid(); showToast(`Ставка изменена`); syncRatesWithCloud(); }
+        }
+
+        async function syncRatesWithCloud() { if (state.syncUrl && state.currentUser !== "Гость") try { await fetch(`${state.syncUrl}?action=syncRates&user=${encodeURIComponent(state.currentUser)}&rates=${encodeURIComponent(JSON.stringify(state.games))}`, { method: 'GET', redirect: 'follow' }); } catch (err) {} }
+
+        function openAddGameModal() { document.getElementById('modal-add-game').classList.remove('hidden'); }
+        function closeAddGameModal() { document.getElementById('modal-add-game').classList.add('hidden'); }
+
+        function saveNewGameType() {
+            const name = document.getElementById('new-game-name').value.trim(), rate = parseInt(document.getElementById('new-game-rate').value), emoji = document.getElementById('new-game-emoji').value.trim() || '🎪';
+            if (!name || isNaN(rate)) return showAlert("Заполните поля", "Укажите название и базовую ставку.", "Неверные данные", "error");
+            state.games.push({ name, rate, emoji }); saveStateToLocalStorage(); renderGamesGrid(); renderRatesList(); closeAddGameModal();
+            document.getElementById('new-game-name').value = ''; document.getElementById('new-game-rate').value = ''; document.getElementById('new-game-emoji').value = '';
+            showToast(`Добавлена игра: ${emoji} ${name}`); syncRatesWithCloud();
+        }
+
+        function removeGameType(name) { showConfirm("Удалить игру?", `Удалить "${name}"?`, function() { state.games = state.games.filter(g => g.name !== name); saveStateToLocalStorage(); renderGamesGrid(); renderRatesList(); showToast(`Удалена`); syncRatesWithCloud(); }); }
+
+        // НОВЫЙ СЛОЖНЫЙ УМНЫЙ РАСЧЕТ ПРОПОРЦИЙ
+        async function runSalaryAdjustment() {
+            const realSalary = parseFloat(document.getElementById('real-salary-input').value), targetYearMonth = document.getElementById('adjustment-month').value;
+            if (isNaN(realSalary) || realSalary <= 0 || !targetYearMonth) return showAlert("Ошибка", "Введите ЗП и выберите месяц.", "Внимание", "error");
+
+            let targetMonthEstimated = 0; 
+            let targetMonthTotalHours = 0;
+            const targetLogs = []; 
+            const gamesPlayedInMonth = new Set();
+
+            // Собираем статистику строго по выбранному периоду
+            state.history.forEach(log => {
+                const d = new Date(log.date);
+                if (`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === targetYearMonth) { 
+                    targetMonthEstimated += log.earned; 
+                    targetMonthTotalHours += log.hours;
+                    targetLogs.push(log); 
+                    gamesPlayedInMonth.add(log.game); 
+                }
+            });
+
+            if (targetMonthEstimated === 0 || targetMonthTotalHours === 0) return showAlert("Записи отсутствуют", "В этом месяце нет игр. Нечего калибровать.", "Внимание", "error");
+            
+            // Находим общую разницу между фактом и прогнозом
+            const salaryDifference = realSalary - targetMonthEstimated;
+            // Рассчитываем погрешность, приходящуюся строго на 1 рабочий час в этом месяце
+            const hourlyAdjustment = salaryDifference / targetMonthTotalHours;
+
+            if (state.syncUrl && state.currentUser !== "Гость") {
+                showToast("Облачный расчет..."); updateSyncBadge('syncing');
+                try {
+                    // Передаем параметры на сервер. Бэкенд должен обработать метод пропорционального начисления.
+                    const res = await fetch(`${state.syncUrl}?action=adjustRates&user=${encodeURIComponent(state.currentUser)}&realSalary=${realSalary}&month=${encodeURIComponent(targetYearMonth)}`, { method: 'GET', redirect: 'follow' });
+                    const data = await res.json();
+                    if (data.status === 'success') { document.getElementById('real-salary-input').value = ''; await forceSync(); showAlert("Завершено!", data.message, "Успешно!", "success"); } 
+                    else { showAlert("Ошибка сервера", data.message, "Не выполнено", "error"); updateSyncBadge('online'); }
+                } catch (err) { updateSyncBadge('error'); showAlert("Ошибка", "Нет связи.", "Ошибка", "error"); }
+            } else {
+                // Локальный умный перерасчет:
+                // 1. Корректируем только исторические логи этого месяца (пропорционально их часам)
+                targetLogs.forEach(log => { 
+                    log.earned = Math.round(log.earned + (log.hours * hourlyAdjustment)); 
+                });
+                
+                // 2. Меняем базовые ставки только у тех игр, которые РЕАЛЬНО проводились в этом месяце
+                state.games.forEach(g => { 
+                    if (gamesPlayedInMonth.has(g.name)) {
+                        g.rate = Math.round(g.rate + hourlyAdjustment); 
+                    }
+                });
+
+                saveStateToLocalStorage(); updateDashboard(); renderGamesGrid(); renderRatesList(); renderLogs();
+                document.getElementById('real-salary-input').value = ''; 
+                showAlert(
+                    "Выполнено (Оффлайн)", 
+                    `Ставки за ${targetYearMonth} скорректированы на ${Math.round(hourlyAdjustment)} ₽/час. Игры, которых не было в расписании, сохранили свои прежние тарифы!`, 
+                    "Успешно!", 
+                    "success"
+                );
+            }
+        }
+
+        // МОДАЛКИ
+        function showToast(text, isError = false) {
+            const t = document.getElementById('toast'), tText = document.getElementById('toast-text'), tIcon = document.getElementById('toast-icon');
+            tText.innerText = text;
+            if (isError) { t.classList.remove('bg-park-accent'); t.classList.add('bg-rose-500', 'text-white'); tIcon.className = "fa-solid fa-triangle-exclamation"; } 
+            else { t.classList.remove('bg-rose-500', 'text-white'); t.classList.add('bg-park-accent', 'text-slate-950'); tIcon.className = "fa-solid fa-circle-check"; }
+            t.classList.remove('opacity-0', 'pointer-events-none'); setTimeout(() => { t.classList.add('opacity-0', 'pointer-events-none'); }, 3500);
+        }
+
+        function showAlert(title, message, subtitle = "Уведомление", type = "info") {
+            const m = document.getElementById('custom-modal'), ic = document.getElementById('modal-icon');
+            document.getElementById('modal-title').innerText = title; document.getElementById('modal-subtitle').innerText = subtitle; document.getElementById('modal-message').innerText = message;
+            if (type === 'error') { ic.className = "w-10 h-10 rounded-full bg-rose-500/15 flex items-center justify-center text-lg text-rose-500"; ic.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>'; } 
+            else if (type === 'success') { ic.className = "w-10 h-10 rounded-full bg-emerald-500/15 flex items-center justify-center text-lg text-park-accent"; ic.innerHTML = '<i class="fa-solid fa-circle-check"></i>'; } 
+            else { ic.className = "w-10 h-10 rounded-full bg-blue-500/15 flex items-center justify-center text-lg text-blue-400"; ic.innerHTML = '<i class="fa-solid fa-circle-info"></i>'; }
+            document.getElementById('modal-buttons').innerHTML = `<button onclick="document.getElementById('custom-modal').classList.add('hidden')" class="flex-grow bg-slate-800 text-slate-200 font-bold py-2.5 px-4 rounded-xl text-xs">Понятно</button>`;
+            m.classList.remove('hidden');
+        }
+
+        function showConfirm(title, message, onConfirm, subtitle = "Подтверждение") {
+            const m = document.getElementById('custom-modal');
+            document.getElementById('modal-title').innerText = title; document.getElementById('modal-subtitle').innerText = subtitle; document.getElementById('modal-message').innerText = message;
+            document.getElementById('modal-icon').className = "w-10 h-10 rounded-full bg-amber-500/15 flex items-center justify-center text-lg text-amber-500";
+            document.getElementById('modal-icon').innerHTML = '<i class="fa-solid fa-question"></i>';
+            document.getElementById('modal-buttons').innerHTML = `<button onclick="document.getElementById('custom-modal').classList.add('hidden')" class="flex-1 bg-slate-800 text-slate-300 font-bold py-2.5 px-4 rounded-xl text-xs">Отмена</button><button id="modal-confirm-btn" class="flex-1 bg-park-accent text-slate-950 font-bold py-2.5 px-4 rounded-xl text-xs">Да</button>`;
+            document.getElementById('modal-confirm-btn').onclick = function() { document.getElementById('custom-modal').classList.add('hidden'); onConfirm(); };
+            m.classList.remove('hidden');
+        }
+
+        function saveSyncSettings() {
+            const url = document.getElementById('sync-url-input').value.trim();
+            if (url) {
+                if (url.includes("/edit")) return showAlert("Формат ссылки", "Нужна ссылка на опубликованное приложение (/exec).", "Ошибка", "error");
+                state.syncUrl = url; localStorage.setItem('park_sync_url', url); showToast("Настроено!"); forceSync();
+            }
+        }
+
+        function resetSyncSettings() { state.syncUrl = ''; localStorage.removeItem('park_sync_url'); document.getElementById('sync-url-input').value = ''; updateSyncBadge('offline'); showToast("Отключено"); }
+    </script>
+</body>
+</html>
